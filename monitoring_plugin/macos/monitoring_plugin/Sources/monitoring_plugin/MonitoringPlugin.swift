@@ -15,7 +15,7 @@ public class MonitoringPlugin: NSObject, FlutterPlugin {
     private let monitor = AppMonitor()
     private let interceptor = FocusInterceptor()
     private let passwordGate = PasswordGate()
-    private let menuBar = MenuBarController()
+    private lazy var menuBar = MenuBarController(passwordGate: passwordGate)
     private var whitelist: Set<String> = []
 
     private func setup(with registrar: FlutterPluginRegistrar) {
@@ -66,6 +66,7 @@ public class MonitoringPlugin: NSObject, FlutterPlugin {
         }
         interceptor.restore()
         whitelist = interceptor.allowedBundleIds
+        menuBar.updateMonitoring(monitor.isRunning)
     }
 
     // MARK: - MethodChannel
@@ -74,10 +75,12 @@ public class MonitoringPlugin: NSObject, FlutterPlugin {
         switch call.method {
         case "start":
             monitor.start()
+            menuBar.updateMonitoring(true)
             result(true)
 
         case "stop":
             monitor.stop()
+            menuBar.updateMonitoring(false)
             result(true)
 
         case "isRunning":

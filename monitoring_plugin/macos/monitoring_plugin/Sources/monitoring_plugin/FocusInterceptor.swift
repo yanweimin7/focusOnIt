@@ -23,6 +23,7 @@ final class FocusInterceptor {
         "com.apple.ControlCenter",
         "com.apple.WindowManager",
         "com.apple.appkit.xpc.openAndSavePanelService",
+        "com.apple.ActivityMonitor",
     ]
 
     private var defaults: UserDefaults { UserDefaults.standard }
@@ -35,6 +36,11 @@ final class FocusInterceptor {
         if let saved = defaults.array(forKey: "focusOnIt.whitelist") as? [String] {
             allowedBundleIds = Set(saved)
         }
+        // 自身与系统活动监视器默认加入白名单
+        if let own = Bundle.main.bundleIdentifier {
+            allowedBundleIds.insert(own)
+        }
+        allowedBundleIds.insert("com.apple.ActivityMonitor")
     }
 
     // MARK: - 判定
