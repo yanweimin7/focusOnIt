@@ -9,10 +9,13 @@ public class MonitoringPlugin: NSObject, FlutterPlugin {
     }
 
     private var channel: FlutterMethodChannel!
+    private var windowChannel: FlutterMethodChannel?
     private var eventSink: FlutterEventSink?
 
     private let monitor = AppMonitor()
     private let interceptor = FocusInterceptor()
+    private let passwordGate = PasswordGate()
+    private let menuBar = MenuBarController()
     private var whitelist: Set<String> = []
 
     private func setup(with registrar: FlutterPluginRegistrar) {
@@ -28,6 +31,31 @@ public class MonitoringPlugin: NSObject, FlutterPlugin {
             binaryMessenger: messenger
         )
         eventChannel.setStreamHandler(self)
+
+        // 窗口 / 菜单栏控制（在插件 setup 时注册，messenger 必然可用）
+        let window = FlutterMethodChannel(
+            name: "com.focusonit/window",
+            binaryMessenger: messenger
+        )
+        window.setMethodCallHandler { [weak self] call, result in
+            guard let self else {
+                result(FlutterMethodNotImplemented)
+                return
+            }
+            switch call.method {
+            case "collapseToMenuBar":
+                self.menuBar.collapse()
+                result(true)
+            case "restoreFromMenuBar":
+                self.menuBar.restore()
+                result(true)
+            case "isCollapsed":
+                result(self.menuBar.isCollapsed())
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        }
+        windowChannel = window
 
         // 原生 → 插件 → Flutter 事件链路
         monitor.onFrontmostChanged = { [weak self] app in
@@ -98,6 +126,24 @@ public class MonitoringPlugin: NSObject, FlutterPlugin {
             }
             interceptor.terminate(bid)
             result(true)
+
+        case "getPasswordStatus":
+            result(passwordGate.isSet)
+
+        case "setPassword":
+            guard let pwd = call.arguments as? String, !pwd.isEmpty else {
+                result(FlutterError(code: "bad_args", message: "expected non-empty String", details: nil))
+                return
+            }
+            passwordGate.set(pwd)
+            result(true)
+
+        case "verifyPassword":
+            guard let pwd = call.arguments as? String else {
+                result(false)
+                return
+            }
+            result(passwordGate.verify(pwd))
 
         default:
             result(FlutterMethodNotImplemented)

@@ -17,7 +17,6 @@ final class FocusInterceptor {
     let countdownSeconds = 5
 
     private let systemApps: Set<String> = [
-        "com.apple.finder",
         "com.apple.dock",
         "com.apple.SystemUIServer",
         "com.apple.loginwindow",

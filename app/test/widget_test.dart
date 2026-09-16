@@ -7,11 +7,11 @@ void main() {
     test('label maps known events and appends detail', () {
       final item = ActivityItem(
         time: DateTime(2026, 1, 1),
-        event: 'blocked',
+        event: 'terminated',
         appName: 'Safari',
-        detail: '5 秒后将终止',
+        detail: '已强制终止',
       );
-      expect(item.label, '拦截');
+      expect(item.label, '已终止');
       expect(item.isBlock, isTrue);
     });
 

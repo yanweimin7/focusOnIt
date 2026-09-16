@@ -60,6 +60,10 @@ class MonitoringPlugin {
   static const EventChannel _events =
       EventChannel('com.focusonit/monitoring/events');
 
+  /// 窗口控制通道（由宿主 App 的 AppDelegate 注册）。
+  static const MethodChannel _windowChannel =
+      MethodChannel('com.focusonit/window');
+
   /// 原生事件流（`blocked`、`graceExpired`、`forceSwitched` 等）。
   Stream<MonitorEvent> get stream => _events
       .receiveBroadcastStream()
@@ -124,5 +128,39 @@ class MonitoringPlugin {
   /// 终止指定 app 进程。
   Future<bool> terminateApp(String bundleId) async {
     return (await _channel.invokeMethod('terminateApp', bundleId)) as bool;
+  }
+
+  // MARK: - 密码门
+
+  /// 是否已设置保护密码。
+  Future<bool> hasPassword() async {
+    return (await _channel.invokeMethod('getPasswordStatus')) as bool;
+  }
+
+  /// 首次设置保护密码。
+  Future<void> setPassword(String password) async {
+    await _channel.invokeMethod('setPassword', password);
+  }
+
+  /// 验证密码是否正确。未设置密码时返回 true。
+  Future<bool> verifyPassword(String password) async {
+    return (await _channel.invokeMethod('verifyPassword', password)) as bool;
+  }
+
+  // MARK: - 窗口 / 菜单栏
+
+  /// 收缩到顶部菜单栏（隐藏主窗口，保留状态栏图标）。
+  Future<void> collapseToMenuBar() async {
+    await _windowChannel.invokeMethod('collapseToMenuBar');
+  }
+
+  /// 从菜单栏恢复主窗口。
+  Future<void> restoreFromMenuBar() async {
+    await _windowChannel.invokeMethod('restoreFromMenuBar');
+  }
+
+  /// 主窗口当前是否处于收缩（隐藏）状态。
+  Future<bool> isCollapsed() async {
+    return (await _windowChannel.invokeMethod('isCollapsed')) as bool;
   }
 }
