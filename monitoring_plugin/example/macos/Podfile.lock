@@ -1,0 +1,22 @@
+PODS:
+  - FlutterMacOS (1.0.0)
+  - monitoring_plugin (0.0.1):
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - monitoring_plugin (from `Flutter/ephemeral/.symlinks/plugins/monitoring_plugin/macos`)
+
+EXTERNAL SOURCES:
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  monitoring_plugin:
+    :path: Flutter/ephemeral/.symlinks/plugins/monitoring_plugin/macos
+
+SPEC CHECKSUMS:
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  monitoring_plugin: c366e834d43d37430bc45fceb5fefa248b9b93ef
+
+PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
+
+COCOAPODS: 1.16.2
