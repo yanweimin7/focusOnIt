@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 
@@ -10,12 +11,16 @@ class RunningAppInfo {
   final bool isActive;
   final bool isFinishedLaunching;
 
+  /// App 图标 PNG 字节（可能为空，UI 需提供兜底渲染）。
+  final Uint8List? icon;
+
   const RunningAppInfo({
     required this.bundleId,
     required this.name,
     required this.pid,
     required this.isActive,
     required this.isFinishedLaunching,
+    this.icon,
   });
 
   factory RunningAppInfo.fromJson(Map<String, dynamic> json) => RunningAppInfo(
@@ -24,6 +29,7 @@ class RunningAppInfo {
         pid: (json['pid'] ?? 0) as int,
         isActive: (json['isActive'] ?? false) as bool,
         isFinishedLaunching: (json['isFinishedLaunching'] ?? false) as bool,
+        icon: (json['icon'] as Uint8List?),
       );
 
   Map<String, dynamic> toJson() => {
@@ -32,6 +38,7 @@ class RunningAppInfo {
         'pid': pid,
         'isActive': isActive,
         'isFinishedLaunching': isFinishedLaunching,
+        if (icon != null) 'icon': icon,
       };
 }
 

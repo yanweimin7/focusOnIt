@@ -1,7 +1,25 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:monitoring_plugin/monitoring_plugin.dart';
 
 import 'focus_controller.dart';
+
+// ---------------------------------------------------------------------------
+// 主题色（深色专注风）
+// ---------------------------------------------------------------------------
+const kBg = Color(0xFF0B0F1A);
+const kSurface = Color(0xFF121826);
+const kSurfaceHi = Color(0xFF1A2233);
+const kBorder = Color(0xFF242E42);
+const kText = Color(0xFFE7EAF1);
+const kTextMuted = Color(0xFF98A2B5);
+const kTextFaint = Color(0xFF6B7689);
+const kTeal = Color(0xFF2DD4BF);
+const kTealDeep = Color(0xFF14B8A6);
+const kGreen = Color(0xFF34D399);
+const kAmber = Color(0xFFFBBF24);
+const kRed = Color(0xFFF87171);
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,24 +75,97 @@ class _FocusOnItAppState extends State<FocusOnItApp> {
     return MaterialApp(
       title: 'FocusOnIt',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF5C6BC0),
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF5F6FA),
-        cardTheme: const CardThemeData(
-          color: Colors.white,
-          surfaceTintColor: Colors.transparent,
-        ),
-      ),
+      theme: _buildTheme(),
       home: _Scope(
         controller: _controller,
         child: const HomePage(),
       ),
     );
   }
+}
+
+ThemeData _buildTheme() {
+  final scheme = ColorScheme.fromSeed(
+    seedColor: kTealDeep,
+    brightness: Brightness.dark,
+  ).copyWith(
+    primary: kTeal,
+    onPrimary: const Color(0xFF04211D),
+    secondary: kTealDeep,
+    surface: kSurface,
+    onSurface: kText,
+    surfaceContainerHighest: kSurfaceHi,
+    outline: kBorder,
+    error: kRed,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: kBg,
+    fontFamily: '.SF Pro Display',
+    cardTheme: const CardThemeData(
+      color: kSurface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected) ? Colors.white : kTextMuted,
+      ),
+      trackColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected) ? kTeal : kBorder,
+      ),
+      trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
+    ),
+    dividerTheme: const DividerThemeData(color: kBorder),
+    iconTheme: const IconThemeData(color: kTextMuted),
+    textSelectionTheme: TextSelectionThemeData(cursorColor: kTeal, selectionColor: kTeal.withValues(alpha: 0.3)),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: kSurface,
+      hintStyle: const TextStyle(color: kTextFaint, fontSize: 13),
+      labelStyle: const TextStyle(color: kTextMuted),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: kBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: kBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: kTeal, width: 1.5),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: kSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: kBorder),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: kTeal,
+        foregroundColor: const Color(0xFF04211D),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(foregroundColor: kTeal),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: kSurfaceHi,
+      contentTextStyle: const TextStyle(color: kText),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: kBorder)),
+    ),
+  );
 }
 
 class HomePage extends StatelessWidget {
@@ -84,48 +175,105 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = _Scope.of(context);
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.visibility_outlined, color: Color(0xFF5C6BC0)),
-            SizedBox(width: 8),
-            Text(
-              'FocusOnIt',
-              style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.2),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: '收缩到菜单栏',
-            icon: const Icon(Icons.keyboard_arrow_up, size: 22),
-            onPressed: controller.collapseToMenuBar,
+      body: Column(
+        children: [
+          const _Header(),
+          const Divider(height: 1, thickness: 1),
+          Expanded(
+            child: controller.ready
+                ? const _DashLayout()
+                : const Center(child: CircularProgressIndicator(color: kTeal)),
           ),
-          const SizedBox(width: 8),
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Chip(
-              avatar: Icon(
-                controller.monitoring
-                    ? Icons.remove_circle_outline
-                    : Icons.radio_button_unchecked,
-                size: 16,
-                color: controller.monitoring ? Colors.green : Colors.grey,
+        ],
+      ),
+    );
+  }
+}
+
+/// 顶部：品牌 + 监控状态 + 锁 + 收缩。
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _Scope.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [kTeal, kTealDeep],
               ),
-              label: Text(
-                controller.monitoring ? '监控中' : '已暂停',
-                style: const TextStyle(fontSize: 12),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: const Icon(Icons.center_focus_strong, color: Color(0xFF04211D), size: 17),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'FocusOnIt',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: kText, letterSpacing: 0.2),
+              ),
+              Text('macOS 专注守护', style: TextStyle(fontSize: 10.5, color: kTextFaint)),
+            ],
+          ),
+          const Spacer(),
+          _StatusPill(monitoring: controller.monitoring),
+          const SizedBox(width: 6),
+          _LockButton(controller: controller),
+          Tooltip(
+            message: '收缩到菜单栏',
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: IconButton(
+                icon: const Icon(Icons.keyboard_arrow_up, size: 22, color: kTextMuted),
+                onPressed: controller.collapseToMenuBar,
               ),
             ),
           ),
         ],
       ),
-      body: controller.ready
-          ? const _DashLayout()
-          : const Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  final bool monitoring;
+
+  const _StatusPill({required this.monitoring});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = monitoring ? kGreen : kTextFaint;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            monitoring ? '监控中' : '已暂停',
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: color),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -139,8 +287,8 @@ class _DashLayout extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: const [
-        SizedBox(width: 340, child: _LeftPane()),
-        VerticalDivider(width: 1, thickness: 1),
+        SizedBox(width: 330, child: _LeftPane()),
+        VerticalDivider(width: 1, thickness: 1, color: kBorder),
         Expanded(child: _RightPane()),
       ],
     );
@@ -153,10 +301,12 @@ class _LeftPane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       children: const [
         _StatusCard(),
-        SizedBox(height: 12),
+        SizedBox(height: 10),
+        _StatStrip(),
+        SizedBox(height: 10),
         _WhitelistCard(),
       ],
     );
@@ -177,10 +327,9 @@ class _StatusCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _LockButton(controller: controller),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Switch(
             value: controller.monitoring,
-            activeThumbColor: Colors.green,
             onChanged: (_) => _guardedChange(
               context,
               controller,
@@ -202,28 +351,31 @@ class _LockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: !controller.passwordSet
-          ? '设置保护密码'
-          : (controller.isUnlocked ? '已解锁（点击锁定）' : '输入密码解锁'),
-      icon: Icon(
-        !controller.passwordSet
-            ? Icons.lock_outline
-            : (controller.isUnlocked ? Icons.lock_open : Icons.lock),
-        size: 18,
-        color: !controller.passwordSet
-            ? Colors.grey
-            : (controller.isUnlocked ? Colors.green : Colors.orange),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: IconButton(
+        tooltip: !controller.passwordSet
+            ? '设置保护密码'
+            : (controller.isUnlocked ? '已解锁（点击锁定）' : '输入密码解锁'),
+        icon: Icon(
+          !controller.passwordSet
+              ? Icons.lock_outline
+              : (controller.isUnlocked ? Icons.lock_open : Icons.lock),
+          size: 18,
+          color: !controller.passwordSet
+              ? kTextFaint
+              : (controller.isUnlocked ? kTeal : kAmber),
+        ),
+        onPressed: () async {
+          if (!controller.passwordSet) {
+            await _promptSetPassword(context, controller);
+          } else if (controller.isUnlocked) {
+            controller.lock();
+          } else {
+            await _promptUnlock(context, controller, showSnack: true);
+          }
+        },
       ),
-      onPressed: () async {
-        if (!controller.passwordSet) {
-          await _promptSetPassword(context, controller);
-        } else if (controller.isUnlocked) {
-          controller.lock();
-        } else {
-          await _promptUnlock(context, controller, showSnack: true);
-        }
-      },
     );
   }
 }
@@ -357,7 +509,13 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(isSet ? '设置保护密码' : '输入密码'),
+      title: Row(
+        children: [
+          const Icon(Icons.lock_outline, color: kTeal, size: 20),
+          const SizedBox(width: 8),
+          Text(isSet ? '设置保护密码' : '输入密码'),
+        ],
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -381,11 +539,12 @@ class _PasswordDialogState extends State<_PasswordDialog> {
             const SizedBox(height: 12),
             Text(
               _error!,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+              style: const TextStyle(color: kRed, fontSize: 13),
             ),
           ],
         ],
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
@@ -400,6 +559,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   }
 }
 
+/// 前台应用的大图标展示。
 class _FrontmostTile extends StatelessWidget {
   final RunningAppInfo? app;
   final FocusController controller;
@@ -408,39 +568,74 @@ class _FrontmostTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final allowed = app == null ||
-        controller.whitelist.contains(app!.bundleId);
-    return Row(
+    final hasApp = app != null;
+    final allowed =
+        hasApp && controller.whitelist.contains(app!.bundleId);
+    final blockColor = allowed ? kGreen : kAmber;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor:
-              (allowed ? Colors.green : Colors.orange).withValues(alpha: 0.12),
-          child: Icon(
-            allowed ? Icons.check_circle : Icons.warning_amber,
-            size: 22,
-            color: allowed ? Colors.green : Colors.orange,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                app?.name ?? '未知',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+        Row(
+          children: [
+            _AppIcon(app: app, size: 44, radius: 11),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    app?.name ?? '未知应用',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kText),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    app?.bundleId ?? '等待前台切换…',
+                    style: const TextStyle(fontSize: 11, color: kTextFaint),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (hasApp)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: blockColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                overflow: TextOverflow.ellipsis,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(allowed ? Icons.check_circle : Icons.warning_amber,
+                        size: 13, color: blockColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      allowed ? '允许' : '拦截',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: blockColor),
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                app?.bundleId ?? '等待前台切换…',
-                style: const TextStyle(fontSize: 11, color: Colors.grey),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: (allowed ? kGreen : kAmber).withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: (allowed ? kGreen : kAmber).withValues(alpha: 0.25)),
+          ),
+          child: Text(
+            allowed
+                ? '该应用在白名单内，可正常使用'
+                : '切换到此应用将被立即终止',
+            style: TextStyle(fontSize: 11.5, color: allowed ? kText : kTextMuted),
           ),
         ),
       ],
@@ -448,42 +643,129 @@ class _FrontmostTile extends StatelessWidget {
   }
 }
 
-/// 白名单：运行中 App 列表 + 开关。
-class _WhitelistCard extends StatelessWidget {
-  const _WhitelistCard();
+/// 三枚统计卡。
+class _StatStrip extends StatelessWidget {
+  const _StatStrip();
 
   @override
   Widget build(BuildContext context) {
     final controller = _Scope.of(context);
-    return _SectionCard(
-      title: '允许使用的应用（白名单）',
-      trailing: IconButton(
-        tooltip: '刷新',
-        icon: const Icon(Icons.refresh, size: 18),
-        onPressed: controller.refreshApps,
+    final today = DateTime.now();
+    final blockedToday = controller.activities
+        .where((a) => a.isBlock && a.time.year == today.year && a.time.month == today.month && a.time.day == today.day)
+        .length;
+    return Row(
+      children: [
+        _StatBox(value: '${controller.whitelist.length}', label: '白名单'),
+        const SizedBox(width: 10),
+        _StatBox(value: '$blockedToday', label: '今日拦截'),
+        const SizedBox(width: 10),
+        _StatBox(value: '${controller.runningApps.length}', label: '已装应用'),
+      ],
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _StatBox({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: kBorder),
+        ),
+        child: Column(
+          children: [
+            Text(value,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: kTeal)),
+            const SizedBox(height: 2),
+            Text(label, style: const TextStyle(fontSize: 10.5, color: kTextFaint)),
+          ],
+        ),
       ),
-      child: controller.runningApps.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+    );
+  }
+}
+
+/// 白名单：可搜索的应用列表 + 开关。
+class _WhitelistCard extends StatefulWidget {
+  const _WhitelistCard();
+
+  @override
+  State<_WhitelistCard> createState() => _WhitelistCardState();
+}
+
+class _WhitelistCardState extends State<_WhitelistCard> {
+  final _search = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _Scope.of(context);
+    final query = _query.trim().toLowerCase();
+    final apps = query.isEmpty
+        ? controller.sortedApps
+        : controller.sortedApps
+            .where((a) => a.name.toLowerCase().contains(query) || a.bundleId.toLowerCase().contains(query))
+            .toList();
+
+    return _SectionCard(
+      title: '允许使用的应用',
+      trailing: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: IconButton(
+          tooltip: '刷新应用列表',
+          icon: const Icon(Icons.refresh, size: 17),
+          color: kTextMuted,
+          onPressed: controller.refreshApps,
+        ),
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _search,
+            onChanged: (v) => setState(() => _query = v),
+            decoration: const InputDecoration(
+              hintText: '搜索应用…',
+              prefixIcon: Icon(Icons.search, size: 16),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (apps.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
               child: Text(
-                '暂未获取到运行中的应用',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                query.isEmpty ? '暂未获取到应用列表' : '没有匹配的应用',
+                style: const TextStyle(fontSize: 12.5, color: kTextFaint),
               ),
             )
-          : Column(
-              children: [
-                for (final app in controller.sortedApps)
-                  _AppRow(
-                    app: app,
-                    allowed: controller.whitelist.contains(app.bundleId),
-                    onChanged: (v) => _guardedChange(
-                      context,
-                      controller,
-                      () => controller.toggleWhitelist(app.bundleId, v),
-                    ),
+          else
+            ...apps.map((app) => _AppRow(
+                  app: app,
+                  allowed: controller.whitelist.contains(app.bundleId),
+                  onChanged: (v) => _guardedChange(
+                    context,
+                    controller,
+                    () => controller.toggleWhitelist(app.bundleId, v),
                   ),
-              ],
-            ),
+                )),
+        ],
+      ),
     );
   }
 }
@@ -501,15 +783,36 @@ class _AppRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: allowed ? kTeal.withValues(alpha: 0.04) : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: allowed ? kTeal.withValues(alpha: 0.25) : Colors.transparent,
+        ),
+      ),
       child: Row(
         children: [
+          _AppIcon(app: app, size: 26, radius: 6),
+          const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              app.name,
-              style: const TextStyle(fontSize: 13),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  app.name,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: kText),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (app.pid > 0)
+                  Text(
+                    'PID ${app.pid}',
+                    style: const TextStyle(fontSize: 10, color: kTextFaint),
+                  ),
+              ],
             ),
           ),
           Switch(
@@ -531,7 +834,7 @@ class _RightPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = _Scope.of(context);
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       children: [
         _ActivityCard(controller: controller),
       ],
@@ -549,15 +852,29 @@ class _ActivityCard extends StatelessWidget {
     return _SectionCard(
       title: '实时记录',
       child: controller.activities.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                '切入白名单以外的应用后，这里会实时显示拦截过程',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: 28),
+              child: Column(
+                children: [
+                  Icon(Icons.bolt_outlined, size: 28, color: kTextFaint.withValues(alpha: 0.6)),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '切入白名单以外的应用后，这里会实时显示拦截过程',
+                    style: TextStyle(fontSize: 12.5, color: kTextFaint),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             )
           : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (controller.activities.length > 50)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 6),
+                    child: Text('仅显示最近 50 条',
+                        style: TextStyle(fontSize: 10.5, color: kTextFaint)),
+                  ),
                 for (final item in controller.activities.take(50))
                   _ActivityTile(item: item),
               ],
@@ -571,45 +888,80 @@ class _ActivityTile extends StatelessWidget {
 
   const _ActivityTile({required this.item});
 
+  (Color, IconData) get _spec {
+    if (item.isBlock) return (kRed, Icons.block);
+    return (kTeal, Icons.center_focus_strong);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final color = item.isBlock ? Colors.orange : Colors.green;
+    final (color, icon) = _spec;
     final time =
         '${item.time.hour.toString().padLeft(2, '0')}:'
         '${item.time.minute.toString().padLeft(2, '0')}:'
         '${item.time.second.toString().padLeft(2, '0')}';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+    final detail = item.detail != null ? '${item.label} · ${item.detail}' : item.label;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          Text(
-            time,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Colors.grey,
-              fontFeatures: [FontFeature.tabularFigures()],
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Icon(icon, size: 15, color: color),
           ),
           const SizedBox(width: 10),
-          Icon(Icons.circle, size: 8, color: color),
-          const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              item.appName,
-              style: const TextStyle(fontSize: 13),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.appName,
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: kText),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  time,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: kTextFaint,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
-          Text(
-            item.detail != null ? '${item.label} · ${item.detail}' : item.label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
             ),
-            textAlign: TextAlign.right,
-            overflow: TextOverflow.ellipsis,
+            child: Text(
+              detail,
+              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: color),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -630,36 +982,94 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+    return Container(
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kBorder),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF6B7280),
-                  ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: kTextMuted,
+                  letterSpacing: 0.3,
                 ),
-                if (trailing != null) ?trailing,
-              ],
-            ),
-            const SizedBox(height: 8),
-            child,
-          ],
+              ),
+              if (trailing != null) ?trailing,
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+/// App 图标：有真实 PNG 用它，否则用首字母 + 主题色兜底。
+class _AppIcon extends StatelessWidget {
+  final RunningAppInfo? app;
+  final double size;
+  final double radius;
+
+  const _AppIcon({required this.app, this.size = 32, this.radius = 8});
+
+  @override
+  Widget build(BuildContext context) {
+    final Uint8List? bytes = app?.icon;
+    if (bytes != null || app == null) {
+      if (bytes != null) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(radius),
+          child: Image.memory(bytes, width: size, height: size, fit: BoxFit.cover),
+        );
+      }
+      return _placeholder(size, radius);
+    }
+
+    final name = app!.name.trim();
+    final initial = name.isNotEmpty ? name.characters.first.toUpperCase() : '?';
+    final hue = (app!.bundleId.hashCode % 360).abs().toDouble();
+    final bg = HSLColor.fromAHSL(0.16, hue, 0.55, 0.45).toColor();
+    final fg = HSLColor.fromAHSL(0.92, hue, 0.55, 0.42).toColor();
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontSize: size * 0.42,
+          fontWeight: FontWeight.w700,
+          color: fg,
         ),
       ),
+    );
+  }
+
+  Widget _placeholder(double size, double radius) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: kSurfaceHi,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: Icon(Icons.question_mark, size: size * 0.5, color: kTextFaint),
     );
   }
 }

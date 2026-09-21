@@ -166,10 +166,13 @@ public class MonitoringPlugin: NSObject, FlutterPlugin {
     // MARK: - 前台切换处理
 
     private func handleActivated(_ app: NSRunningApplication) {
-        let info = MonitoredApp(runningApp: app).json
+        let info = MonitoredApp(
+            runningApp: app,
+            iconPNG: monitor.iconPNG(for: app)
+        ).json
 
         if interceptor.shouldIntercept(bundleId: info["bundleId"] as? String ?? "") {
-            // 触发全屏倒计时拦截（5s 后终止进程）
+            // 触发拦截（拦截即杀，无宽限期）
             interceptor.runInterception(app)
         } else {
             // 白名单 / 自身：仅广播激活事件

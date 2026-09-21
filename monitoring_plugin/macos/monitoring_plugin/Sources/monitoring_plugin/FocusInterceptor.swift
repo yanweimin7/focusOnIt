@@ -36,11 +36,12 @@ final class FocusInterceptor {
         if let saved = defaults.array(forKey: "focusOnIt.whitelist") as? [String] {
             allowedBundleIds = Set(saved)
         }
-        // 自身与系统活动监视器默认加入白名单
+        // 自身、系统活动监视器、本地 flutter run 调试应用默认加入白名单
         if let own = Bundle.main.bundleIdentifier {
             allowedBundleIds.insert(own)
         }
         allowedBundleIds.insert("com.apple.ActivityMonitor")
+        allowedBundleIds.insert("com.example.flutterQuickjs")
     }
 
     // MARK: - 判定

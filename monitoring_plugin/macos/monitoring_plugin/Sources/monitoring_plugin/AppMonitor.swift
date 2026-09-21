@@ -8,6 +8,9 @@ final class AppMonitor {
     private let workspace = NSWorkspace.shared
     private var observer: NSObjectProtocol?
 
+    /// bundleId → 渲染后的图标 PNG 缓存（图标基本不变，避免重复绘制）。
+    private var iconCache: [String: Data] = [:]
+
     /// 前台 App 切换回调（激活的应用）。
     var onFrontmostChanged: ((NSRunningApplication) -> Void)?
 
@@ -52,7 +55,10 @@ final class AppMonitor {
         for app in workspace.runningApplications
             .filter({ $0.activationPolicy == .regular }) {
             guard app.bundleIdentifier != selfId else { continue }
-            let json = MonitoredApp(runningApp: app).json
+            let json = MonitoredApp(
+                runningApp: app,
+                iconPNG: iconPNG(for: app)
+            ).json
             if let bid = json["bundleId"] as? String {
                 byBundleId[bid] = json   // 运行中的信息覆盖安装目录信息
             }
@@ -65,7 +71,7 @@ final class AppMonitor {
 
     func frontmostApp() -> [String: Any]? {
         guard let app = workspace.frontmostApplication else { return nil }
-        return MonitoredApp(runningApp: app).json
+        return MonitoredApp(runningApp: app, iconPNG: iconPNG(for: app)).json
     }
 
     /// 按 bundleId 查找运行中的应用。
@@ -123,12 +129,36 @@ final class AppMonitor {
         let name = bundle.localizedInfoDictionary?["CFBundleName"] as? String
             ?? bundle.infoDictionary?["CFBundleName"] as? String
             ?? (path as NSString).lastPathComponent
-        return [
+        var dict: [String: Any] = [
             "bundleId": bid,
             "name": name,
             "pid": 0,
             "isActive": false,
             "isFinishedLaunching": false,
         ]
+        if let icon = iconPNG(at: path, bundleId: bid) {
+            dict["icon"] = icon
+        }
+        return dict
+    }
+
+    // MARK: - 图标
+
+    /// 运行中应用的图标 PNG（按 bundleId 缓存）。
+    func iconPNG(for app: NSRunningApplication) -> Data? {
+        guard let bid = app.bundleIdentifier, !bid.isEmpty else { return nil }
+        if let cached = iconCache[bid] { return cached }
+        guard let image = app.icon else { return nil }
+        let data = IconRenderer.pngData(from: image)
+        iconCache[bid] = data
+        return data
+    }
+
+    /// 已安装（未运行）应用的图标 PNG，从 .app 路径取系统图标。
+    private func iconPNG(at path: String, bundleId: String) -> Data? {
+        if let cached = iconCache[bundleId] { return cached }
+        let data = IconRenderer.pngData(from: workspace.icon(forFile: path))
+        iconCache[bundleId] = data
+        return data
     }
 }

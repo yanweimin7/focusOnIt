@@ -26,7 +26,7 @@ FocusOnIt: macOS 专注 App — 前台 App 监控，白名单外应用激活即�
 - `MonitoringPlugin.swift` — MethodChannel `com.focusonit/monitoring`、EventChannel `com.focusonit/monitoring/events`、窗口通道 + 各组件装配。MethodChannel 的 `start/stop` 会同步菜单栏图标状态。
 - `PasswordGate.swift` — 密码仅存 SHA-256 摘要（盐 `focusOnIt.v1`，UserDefaults `focusOnIt.passwordHash`）；**未设置密码时 `verify` 恒通过**，只有设置过密码才拦截（菜单栏退出也遵循此逻辑）。
 - `MenuBarController.swift` — 菜单栏图标 + 下拉菜单（显示/隐藏主窗口、退出需密码）。图标随监控状态变色：开→绿色 `eye.fill`，关→斜线 `eye.slash`。
-- 白名单持久化：UserDefaults `focusOnIt.whitelist`；`restore()` 强制写入自身与 `com.apple.ActivityMonitor`。
+- 白名单持久化：UserDefaults `focusOnIt.whitelist`；`restore()` 强制写入自身、`com.apple.ActivityMonitor` 与本地调试应用 `com.example.flutterQuickjs`（flutter run 开发时勿被拦截）。
 
 ## 事件约定（事件链路：原生 → plugin stream → FocusController notifyListeners）
 
