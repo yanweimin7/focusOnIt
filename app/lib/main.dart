@@ -356,7 +356,9 @@ class _LockButton extends StatelessWidget {
       child: IconButton(
         tooltip: !controller.passwordSet
             ? '设置保护密码'
-            : (controller.isUnlocked ? '已解锁（点击锁定）' : '输入密码解锁'),
+            : (controller.isUnlocked
+                ? '已解锁（点击锁定）'
+                : (controller.biometricAvailable ? '指纹或密码解锁' : '输入密码解锁')),
         icon: Icon(
           !controller.passwordSet
               ? Icons.lock_outline
@@ -450,15 +452,67 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   final _confirm = TextEditingController();
   final bool _obscure = true;
   bool _submitting = false;
+  bool _biometricBusy = false;
   String? _error;
 
   bool get isSet => widget.mode == _PasswordMode.set;
+
+  /// 解锁模式下指纹可用才展示指纹入口。
+  bool get _biometricReady =>
+      !isSet && widget.controller.biometricAvailable;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_biometricReady) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _submitBiometric());
+    }
+  }
 
   @override
   void dispose() {
     _pwd.dispose();
     _confirm.dispose();
     super.dispose();
+  }
+
+  /// Touch ID 解锁；取消不提示，其余失败给出原因。
+  Future<void> _submitBiometric() async {
+    if (_biometricBusy || _submitting) return;
+    setState(() {
+      _biometricBusy = true;
+      _error = null;
+    });
+    final result = await widget.controller.unlockWithBiometrics();
+    if (!mounted) return;
+    if (result.ok) {
+      if (widget.showSnack) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已解锁，1 分钟内可修改设置')),
+        );
+      }
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _biometricBusy = false;
+      _error = result.code == 'userCancel' ? null : _biometricErrorText(result.code);
+    });
+  }
+
+  String _biometricErrorText(String code) {
+    switch (code) {
+      case 'authenticationFailed':
+        return '指纹不匹配，可重试或输入密码';
+      case 'lockout':
+        return '指纹已被锁定，请改用密码';
+      case 'notEnrolled':
+        return '尚未录入指纹，请先在系统设置中录入';
+      case 'notAvailable':
+        return '指纹识别不可用，请输入密码';
+      default:
+        return '指纹验证失败，请输入密码';
+    }
   }
 
   Future<void> _submit() async {
@@ -519,10 +573,44 @@ class _PasswordDialogState extends State<_PasswordDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_biometricReady) ...[
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: (_biometricBusy || _submitting) ? null : _submitBiometric,
+                icon: _biometricBusy
+                    ? const SizedBox(
+                        width: 15,
+                        height: 15,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: kTeal),
+                      )
+                    : const Icon(Icons.fingerprint, size: 19),
+                label: Text(_biometricBusy ? '等待指纹验证…' : '使用 Touch ID 解锁'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kTeal,
+                  side: const BorderSide(color: kBorder),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('或输入密码', style: TextStyle(fontSize: 11, color: kTextFaint)),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 14),
+          ],
           TextField(
             controller: _pwd,
             obscureText: _obscure,
-            autofocus: true,
+            autofocus: !_biometricReady,
             onSubmitted: (_) => _submit(),
             decoration: const InputDecoration(labelText: '密码'),
           ),

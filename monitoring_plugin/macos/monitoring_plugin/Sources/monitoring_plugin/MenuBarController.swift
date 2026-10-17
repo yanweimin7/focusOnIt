@@ -12,10 +12,12 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     )
     private let menu = NSMenu()
     private let passwordGate: PasswordGate
+    private let biometric: BiometricAuth
     private var isMonitoring = false
 
-    init(passwordGate: PasswordGate) {
+    init(passwordGate: PasswordGate, biometric: BiometricAuth) {
         self.passwordGate = passwordGate
+        self.biometric = biometric
         super.init()
         setupMenu()
         updateMonitoring(false)
@@ -100,6 +102,24 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             return
         }
 
+        // 指纹可用则先走 Touch ID；取消即中止，验证失败回退密码框
+        if biometric.isAvailable {
+            NSApp.activate(ignoringOtherApps: true)
+            biometric.authenticate(reason: "验证指纹以退出 FocusOnIt") { [weak self] ok, code in
+                guard let self else { return }
+                if ok {
+                    NSApp.terminate(nil)
+                } else if code != "userCancel" {
+                    self.promptPasswordAndQuit()
+                }
+            }
+            return
+        }
+
+        promptPasswordAndQuit()
+    }
+
+    private func promptPasswordAndQuit() {
         let alert = NSAlert()
         alert.messageText = "退出 FocusOnIt"
         alert.informativeText = "请输入密码后退出："

@@ -16,14 +16,19 @@ final class FocusInterceptor {
 
     let countdownSeconds = 5
 
+    // 注意：shouldIntercept 用小写比较，此处必须全小写
     private let systemApps: Set<String> = [
         "com.apple.dock",
-        "com.apple.SystemUIServer",
+        "com.apple.systemuiserver",
         "com.apple.loginwindow",
-        "com.apple.ControlCenter",
-        "com.apple.WindowManager",
-        "com.apple.appkit.xpc.openAndSavePanelService",
-        "com.apple.ActivityMonitor",
+        "com.apple.controlcenter",
+        "com.apple.windowmanager",
+        "com.apple.appkit.xpc.openandsavepanelservice",
+        "com.apple.activitymonitor",
+        // Touch ID 系统弹窗（coreautha），拦截会导致指纹验证无响应
+        "com.apple.localauthentication.uiagent",
+        // 系统密码/授权弹窗（SecurityAgent）
+        "com.apple.securityagent",
     ]
 
     private var defaults: UserDefaults { UserDefaults.standard }

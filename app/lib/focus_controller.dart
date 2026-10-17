@@ -44,6 +44,12 @@ class FocusController extends ChangeNotifier {
   /// 是否已设置保护密码。
   bool passwordSet = false;
 
+  /// 指纹 / 面容识别是否可用。
+  bool biometricAvailable = false;
+
+  /// 生物识别类型：touchID / faceID / none。
+  String biometricType = 'none';
+
   /// 解锁有效截止时间（未解锁为 null）。
   DateTime? _unlockedUntil;
   Timer? _lockTimer;
@@ -84,6 +90,15 @@ class FocusController extends ChangeNotifier {
     whitelist = await _plugin.getWhitelist();
     passwordSet = await _plugin.hasPassword();
     monitoring = await _plugin.isRunning();
+    try {
+      final bio = await _plugin.getBiometricStatus();
+      biometricAvailable = bio.available;
+      biometricType = bio.type;
+    } catch (e) {
+      debugPrint('[FocusController] biometric status failed: $e');
+      biometricAvailable = false;
+      biometricType = 'none';
+    }
   }
 
   // MARK: - 密码门
@@ -96,6 +111,18 @@ class FocusController extends ChangeNotifier {
       notifyListeners();
     }
     return ok;
+  }
+
+  /// 通过 Touch ID 解锁 1 分钟。返回原生结果，UI 据此提示。
+  Future<BiometricResult> unlockWithBiometrics() async {
+    final result = await _plugin.authenticateBiometric(
+      reason: '验证指纹以解锁 FocusOnIt',
+    );
+    if (result.ok) {
+      _beginUnlockWindow();
+      notifyListeners();
+    }
+    return result;
   }
 
   /// 立即锁定（清除解锁状态）。

@@ -15,7 +15,8 @@ public class MonitoringPlugin: NSObject, FlutterPlugin {
     private let monitor = AppMonitor()
     private let interceptor = FocusInterceptor()
     private let passwordGate = PasswordGate()
-    private lazy var menuBar = MenuBarController(passwordGate: passwordGate)
+    private let biometric = BiometricAuth()
+    private lazy var menuBar = MenuBarController(passwordGate: passwordGate, biometric: biometric)
     private var whitelist: Set<String> = []
 
     private func setup(with registrar: FlutterPluginRegistrar) {
@@ -147,6 +148,16 @@ public class MonitoringPlugin: NSObject, FlutterPlugin {
                 return
             }
             result(passwordGate.verify(pwd))
+
+        case "getBiometricStatus":
+            result(biometric.status)
+
+        case "authenticateBiometric":
+            let raw = (call.arguments as? String) ?? ""
+            let reason = raw.isEmpty ? "验证指纹以解锁 FocusOnIt" : raw
+            biometric.authenticate(reason: reason) { ok, code in
+                result(["ok": ok, "code": code])
+            }
 
         default:
             result(FlutterMethodNotImplemented)

@@ -42,6 +42,28 @@ class RunningAppInfo {
       };
 }
 
+/// 生物识别（Touch ID / Face ID）可用性。
+class BiometricStatus {
+  /// 设备是否可用生物识别（硬件存在且已录入指纹）。
+  final bool available;
+
+  /// 识别类型：touchID / faceID / none。
+  final String type;
+
+  const BiometricStatus({required this.available, required this.type});
+}
+
+/// 单次生物识别验证结果。
+class BiometricResult {
+  final bool ok;
+
+  /// 结果码：ok / userCancel / authenticationFailed / lockout /
+  /// notAvailable / notEnrolled / unknown。
+  final String code;
+
+  const BiometricResult({required this.ok, required this.code});
+}
+
 /// 原生层推送给 Flutter 的监控事件。
 class MonitorEvent {
   /// 事件名：appActivated / blocked / terminated
@@ -152,6 +174,33 @@ class MonitoringPlugin {
   /// 验证密码是否正确。未设置密码时返回 true。
   Future<bool> verifyPassword(String password) async {
     return (await _channel.invokeMethod('verifyPassword', password)) as bool;
+  }
+
+  // MARK: - 生物识别（Touch ID）
+
+  /// 生物识别可用性（UI 据此决定是否展示指纹入口）。
+  Future<BiometricStatus> getBiometricStatus() async {
+    final raw = await _channel.invokeMapMethod<String, dynamic>(
+      'getBiometricStatus',
+    );
+    return BiometricStatus(
+      available: (raw?['available'] ?? false) as bool,
+      type: (raw?['type'] ?? 'none') as String,
+    );
+  }
+
+  /// 弹出系统生物识别验证。取消 / 失败不抛异常，由 [BiometricResult.code] 区分。
+  Future<BiometricResult> authenticateBiometric({
+    String reason = '验证指纹以解锁 FocusOnIt',
+  }) async {
+    final raw = await _channel.invokeMapMethod<String, dynamic>(
+      'authenticateBiometric',
+      reason,
+    );
+    return BiometricResult(
+      ok: (raw?['ok'] ?? false) as bool,
+      code: (raw?['code'] ?? 'unknown') as String,
+    );
   }
 
   // MARK: - 窗口 / 菜单栏
